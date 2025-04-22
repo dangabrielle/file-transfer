@@ -2,13 +2,49 @@ import io
 import os.path
 from datetime import datetime
 import os
+import shutil
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
+
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+
+source_dir = '/Users/dangg/Desktop'
+archive_dir = '/Users/dangg/Desktop/old'
+prefix = 'All Isl Monthly Stats model.xlsx_'
+
+os.makedirs(archive_dir, exist_ok=True)
+
+for filename in os.listdir(source_dir):
+    if filename.startswith(prefix):
+        shutil.move(os.path.join(source_dir, filename),
+                    os.path.join(archive_dir, filename))
+        print(f"Moved {filename} to {archive_dir}")
+
+# List all files that match the pattern
+files = [f for f in os.listdir(archive_dir) if f.startswith(prefix)]
+
+# Extract date from filename and sort (most recent first)
+def extract_date(file):
+    try:
+        date_str = file.split('_')[-1]
+        return datetime.strptime(date_str, '%Y-%m-%d')
+    except ValueError:
+        return datetime.min  # Push invalid or undated files to the end
+
+# Sort by date defined on file name
+files.sort(key=extract_date, reverse=True)
+
+# Keep only the 5 most recent
+for file in files[5:]:
+    full_path = os.path.join(archive_dir, file)
+    os.remove(full_path)
+    print(f"Deleted: {file}")
+
+
 
 def download_file(file_id, file_name):
     creds = None
@@ -40,6 +76,5 @@ def download_file(file_id, file_name):
 
 
 if __name__ == "__main__":
-  #test on desktop first
-  download_file("insert google drive file id", f"/Users/YourUser/Desktop/downloaded_file_{datetime.now()}.xlsx")
+  download_file("14tAFXhstMir7ccOVMetQe6-20WERy_vZ", f"/Users/dangg/Desktop/All Isl Monthly Stats model.xlsx_{datetime.now().date()}")
 
